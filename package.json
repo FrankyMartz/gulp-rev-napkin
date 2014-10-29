@@ -1,7 +1,7 @@
 {
   "name": "gulp-rev-napkin",
   "description": "Remove gulp-rev or gulp-rev-all file originals",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "repository": "https://github.com/FrankyMartz/gulp-rev-napkin.git",
   "homepage": "https://github.com/FrankyMartz/gulp-rev-napkin",
@@ -60,8 +60,10 @@
   },
   "devDependencies": {
     "chai": "*",
+    "coveralls": "*",
     "fs-extra": "*",
-    "mocha": "*"
+    "mocha": "*",
+    "mocha-lcov-reporter": "*"
   },
   "dependencies": {
     "gulp-util": "^3.0.1",
