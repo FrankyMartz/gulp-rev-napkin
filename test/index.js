@@ -1,4 +1,4 @@
-/*global describe, beforeEach, after, it */
+/*global describe, beforeEach, after, afterEach, it */
 /*jslint stupid:true */
 'use strict';
 /*******************************************************************************
@@ -50,103 +50,49 @@ var TEST_FILES_VALID = [
 	{path:'css/fonts/fontstyle-1d87bebe.min.css', revOrigPath:'css/fonts/fontstyle.min.css'}
 ];
 
-var TEST_FILES_FAIL = [
+var TEST_FILES_FAIL = {
 	// Non-Existing File
-	{path:'style-61e0be79.css', revOrigPath:'style-does-not-exist.css'},
+	noExist: {path:'style-61e0be79.css', revOrigPath:'style-does-not-exist.css'},
 	// Out of Bounds
-	{path:'../TEST-out-of-bounds.h2131j4.css', revOrigPath:'../TEST-out-of-bounds.css'},
-	// CWD
-	{path:'', revOrigPath:''},
+	outOfBound: {path:'TEST-out-of-bounds.h2131j4.css', revOrigPath:'TEST-out-of-bounds.css'},
 	// Directories
-	{path:'fonts/fontstyle-61e0be79.js', revOrigPath:'fonts/'},
-	{path:'css/fonts/fontstyle-a42f5380.css', revOrigPath:'css/fonts'},
+	directory: {path:'fonts/fontstyle-61e0be79.js', revOrigPath:'fonts/'},
 	// Broken Path
-	{path:'css/fonts/fontstyle-1d87bebe.min.css', revOrigPath:'css/fonts/NOOP/fontstyle.min.css'}
-];
+	brokenPath: {path:'css/fonts/fontstyle-1d87bebe.min.css', revOrigPath:'css/fonts/NOOP/fontstyle.min.css'}
+};
 
-
-/**
- * Create Array of Vinyl file configurations for Testing.
- * @param {String} cwd - Current Working Directory
- * @param {String} baseDir - Base path for file
- * @param {String} contents - File contents
- * @return {Array.Object} Array of fake rev'd vinyl file representations
- */
-function testFileList(cwd, baseDir, contents) {
-	// !!! ADD/REMOVE test files HERE !!!
-	var files = [
-		{path:'style-61e0be79.css', revOrigPath:'style.css'},
-		{path:'style-a42f5380.min.css', revOrigPath:'style.min.css'},
-		// Different Name
-		{path:'vendor-61e0be79.css', revOrigPath:'vendor.css'},
-		{path:'vendor-a42f5380.min.css', revOrigPath:'vendor.min.css'},
-		// Different File Ext
-		{path:'vendor-61e0be79.js', revOrigPath:'vendor.js'},
-		{path:'vendor-a42f5380.min.js', revOrigPath:'vendor.min.js'},
-		// Nested
-		{path:'fonts/fontstyle-61e0be79.js', revOrigPath:'fonts/fontstyle.css'},
-		{path:'css/fonts/fontstyle-a42f5380.css', revOrigPath:'css/fonts/fontstyle.css'},
-		{path:'css/fonts/fontstyle-1d87bebe.min.css', revOrigPath:'css/fonts/fontstyle.min.css'}
-	];
-
-	var filesFail = [
-		// Non-Existing File
-		{path:'style-does-exist.css', revOrigPath:'style-does-not-exist.css'},
-		// Out of Bounds
-		{path:'../TEST-out-of-bounds.h2131j4.css', revOrigPath:'../TEST-out-of-bounds.css'},
-		// CWD
-		{path:'', revOrigPath:''},
-		// Directories
-		{path:'fonts/badkerning-98374hk3.js', revOrigPath:'fonts/'},
-		{path:'css/fonts/codesmell-kjh4kj21.css', revOrigPath:'css/fonts'},
-		// Broken Path
-		{path:'css/fonts/whitespace-ys93v2fe.min.css', revOrigPath:'css/fonts/NOOP/whitespace.min.css'}
-	];
-
-	// Setup Additional Vinyl requirements
-	files.forEach(function(obj){
-		obj.cwd = cwd;
-		obj.base = path.resolve(baseDir);
-		obj.path = path.join(baseDir, obj.path);
-		obj.contents = contents;
-		if (obj.revOrigPath) {
-			obj.revOrigPath = path.join(baseDir, obj.revOrigPath);
-		}
-	});
-	return files;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Create Array of objects configured for Vinyl testing.
+ * Convert Object for Vinyl Ready mock
  * @param {Object} obj - Object with <path>, <revOrigPath> keys
  * @param {String} cwd - Current Working Directory
  * @param {String} baseDir - Base path for file
  * @param {String} contents - File contents
- * @return {Object} Object configured for Vinyl mocking
+ * @return {<RevVinylMock>} Object configured for Vinyl mocking
  */
 function vinylFilePrimer(obj, cwd, baseDir, contents){
 	obj.cwd = cwd;
 	obj.base = path.resolve(baseDir);
-	obj.path = path.join(baseDir, obj.path);
+	obj.path = path.resolve(obj.base, obj.path);
 	obj.contents = contents;
 	if (obj.revOrigPath) {
-	  obj.revOrigPath = path.join(baseDir, obj.revOrigPath);
+	  obj.revOrigPath = path.resolve(obj.base, obj.revOrigPath);
 	}
   return obj;
 }
 
 
 /**
- * Create Array of objects configured for Vinyl testing.
- * @param {Array.Object} list - Array of Objects with <path>, <revOrigPath> keys
+ * Convert Array of Objects for Vinyl ready mock
+ * @param {Array.Object} list - Array.Object with <path>, <revOrigPath> keys
  * @param {String} cwd - Current Working Directory
  * @param {String} baseDir - Base path for file
  * @param {String} contents - File contents
- * @return {Array.Object} Array of objects configured for Vinyl mocking
+ * @return {Array.<RevVinylMock>} Array.<RevVinylMock> configured for Vinyl mocking
  */
 function vinylArrayPrimer(list, cwd, baseDir, contents){
   return list.map(function(asset){
@@ -154,12 +100,25 @@ function vinylArrayPrimer(list, cwd, baseDir, contents){
 	});
 }
 
+/**
+ * Convert Array of Objects or an Object for Vinyl ready mock
+ * @param {(Array.Object|Object)} asset - Array.Object || Object with <path>, <revOrigPath> keys
+ * @param {String} cwd - Current Working Directory
+ * @param {String} baseDir - Base path for file
+ * @param {String} contents - File contents
+ * @return {(Array.<RevVinylMock>|<RevVinylMock>)} Array.<RevVinylMock> || <RevVinylMock> configured for Vinyl mocking
+ */
+function vinylPrimer(asset, cwd, baseDir, contents){
+	if(Array.isArray(asset)) {
+		return vinylArrayPrimer(asset, cwd, baseDir, contents);
+	}
+	return vinylFilePrimer(asset, cwd, baseDir, contents);
+}
 
 /**
- * mockVinylFile
- * @summary Create post gulp-rev(-all) vinyl file
- * @param {RevVinylMock} obj - Args for instantiating Vinyl file plus rev info
- * @return {Object} Vinyl file
+ * Convert Object into Vinyl mock
+ * @param {RevVinylMock} obj - Mock Object with Vinyl prerequisites
+ * @return {Object} Vinyl Mock
  */
 function mockVinylFile(obj){
 	if (!obj.cwd || typeof obj.cwd !== 'string') {
@@ -175,23 +134,23 @@ function mockVinylFile(obj){
 		throw new Error('mockVinylFile: <obj>.revOrigPath requires typeof (String)');
 	}
 	obj.contents = obj.contents || 'For sale: Baby shoes, never worn';
-	var file = new gUtil.File({
+	var vinylMock = new gUtil.File({
 	    cwd      : obj.cwd,
 			base     : obj.base,
 			path     : obj.path,
 			contents : new Buffer(obj.contents),
 	});
 	if (obj.revOrigPath) {
-		file.revOrigPath = obj.revOrigPath;
+		vinylMock.revOrigPath = obj.revOrigPath;
 	}
-	return file;
+	return vinylMock;
 }
 
 
 /**
- * Convert Array of Files into Vinyl Array
- * @param {Array.Object} list - Array of Mock Files
- * @return {Array.Object} - Array of Mock Vinyl Files
+ * Convert Object Array into Vinyl mock Array
+ * @param {Array.<RevVinylMock>} list - Array of mock Objects with Vinyl prerequisites
+ * @return {Array.Object} - Mock Vinyl Array
  */
 function mockVinylArray(list){
 	return list.map(mockVinylFile);
@@ -199,21 +158,30 @@ function mockVinylArray(list){
 
 
 /**
- * writeToStream
- * @summary Initialize Stream with File
- * @param stream
- * @param asset
- * @return {undefined}
+ * Convert Array of Objects or Object into Vinyl mock (Array)
+ * @param {(Array.<RevVinylMock>|<RevVinylMock>)} asset - Array or Object with Vinyl prerequisites
+ * @return {(Array.Object|Object)} - Array or Object of Vinyl Mock(s)
  */
-function writeToStream(stream, asset){
+function mockVinyl(asset){
 	if (Array.isArray(asset)) {
-		asset.forEach(function(file){
-			stream.write(file);
+		return mockVinylArray(asset);
+	}
+	return mockVinylFile(asset);
+}
+
+/**
+ * Write Data to Stream
+ * @param {Stream} stream - Initialized Stream
+ * @param {*} data - Data to write to stream
+ */
+function writeToStream(stream, data){
+	if (Array.isArray(data)) {
+		data.forEach(function(mock){
+			stream.write(mock);
 		});
 	} else {
-		stream.write(asset);
+		stream.write(data);
 	}
-	return stream;
 }
 
 
@@ -222,13 +190,23 @@ function writeToStream(stream, asset){
 ////////////////////////////////////////////////////////////////////////////////
 
 describe('gulp-rev-napkin', function(){
-	VINYL_FILES_VALID = mockVinylArray( vinylArrayPrimer(TEST_FILES_VALID) );
-	TEST_FILES = mockVinylArray(TEST_FILES);
+	var VINYL_FILES_VALID = vinylPrimer(TEST_FILES_VALID, TEST_CWD, TEST_DIR, TEST_FILE_CONTENTS);
+	VINYL_FILES_VALID = mockVinyl(TEST_FILES_VALID);
 
+	var actualLog = gUtil.log;
+	var logOutput = [];
+
+	////////////////////////////////////////
+	// Test Preparation
 	////////////////////////////////////////
 
 	beforeEach(function(done){
-		TEST_FILES.forEach(function(asset){
+		// Collect Log Output for testing
+		gUtil.log = function(){
+			logOutput.push(Array.prototype.slice.call(arguments));
+		};
+		// Ensure Test Files Exist
+		VINYL_FILES_VALID.forEach(function(asset){
 			fs.ensureFileSync(asset.path);
 			if (asset.revOrigPath) {
 				fs.ensureFileSync(asset.revOrigPath);
@@ -237,21 +215,30 @@ describe('gulp-rev-napkin', function(){
 		done();
 	});
 
-	////////////////////////////////////////
+
+	afterEach(function(done){
+	  gUtil.log = actualLog;
+		logOutput = [];
+		done();
+	});
+
 
 	after(function(done){
-			fs.remove(TEST_DIR, function(error){
-				if (error) {
-					throw error;
-				}
-				done();
-			});
+		// Clear Test Cruft
+		fs.remove(TEST_DIR, function(error){
+			if (error) {
+				throw error;
+			}
+			done();
+		});
 	});
 
 	////////////////////////////////////////
+	// Verify Testing Environment
+	////////////////////////////////////////
 
 	it('should have a working TEST directory', function(done){
-		TEST_FILES.forEach(function(file){
+		VINYL_FILES_VALID.forEach(function(file){
 			expect(fs.existsSync(file.path)).to.equal(true);
 			if (file.revOrigPath) {
 				expect(fs.existsSync(file.revOrigPath)).to.be.true;
@@ -260,10 +247,15 @@ describe('gulp-rev-napkin', function(){
 		done();
 	});
 
+
+	////////////////////////////////////////
+	// Verify 'Through' Stream
+	////////////////////////////////////////
+
 	describe(':: Stream', function(){
 		it('should pass file structure through', function(done){
-			var fakeFile = TEST_FILES[0];
-			var stream = revNapkin({verbose:false});
+			var fakeFile = VINYL_FILES_VALID[0];
+			var stream = revNapkin();
 
 			stream.on('data', function(file){
 				expect(file).to.exist;
@@ -279,47 +271,299 @@ describe('gulp-rev-napkin', function(){
 	});
 
 
+	////////////////////////////////////////
+	// Verify Plugin
+	////////////////////////////////////////
 	describe(':: Napkin', function(){
 
-		describe(':: File Deletion', function(){
-				it('should delete only original file', function(done){
-					var stream = revNapkin({verbose:false});
+		describe('# Basic Usage', function(){
+			it('should delete only original file', function(done){
+				var stream = revNapkin();
 
-					writeToStream(stream, TEST_FILES);
+				writeToStream(stream, VINYL_FILES_VALID);
 
-					stream.end(function(){
-						TEST_FILES.forEach(function(file){
-							expect(fs.existsSync(file.path)).to.be.true;
-							expect(fs.existsSync(file.revOrigPath)).to.be.false;
-						});
-					  done();
+				stream.end(function(){
+					VINYL_FILES_VALID.forEach(function(file){
+						expect(fs.existsSync(file.path)).to.be.true;
+						expect(fs.existsSync(file.revOrigPath)).to.be.false;
 					});
+					done();
 				});
-		});
-
-
-		describe(':: Cavents', function(){
-			it('should not delete target if folder', function(done){
-				done();
 			});
 
-			//it('should emit error if target file does not exist', function(done){
-				//done();
-			//});
 
-			//it('should emit error if target file dir does not exist', function(done){
-				//done();
-			//});
+			it('should not delete file outside of CWD by default', function(done){
+				var cwd = path.resolve(TEST_CWD, TEST_DIR);
+				var baseDir = TEST_CWD;
+				var errorFile = TEST_FILES_FAIL.outOfBound;
+				errorFile = vinylPrimer(errorFile, cwd, baseDir, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
 
-			//it('should not delete current working directory', function(done){
-				//done();
-			//});
+				fs.ensureFileSync(errorFile.path);
+				fs.ensureFileSync(errorFile.revOrigPath);
 
-			//it('should not delete target file outside current working directory', function(done){
-				//done();
-			//});
+				var stream = revNapkin();
+
+				stream.on('error', function(){
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(fs.existsSync(errorFile.path)).to.be.true;
+					expect(fs.existsSync(errorFile.revOrigPath)).to.be.true;
+					fs.removeSync(errorFile.path);
+					fs.removeSync(errorFile.revOrigPath);
+					done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should emit error if target is outside of CWD with default force', function(done){
+				var cwd = path.resolve(TEST_CWD, TEST_DIR);
+				var baseDir = TEST_CWD;
+				var errorFile = TEST_FILES_FAIL.outOfBound;
+				errorFile = vinylPrimer(errorFile, cwd, baseDir, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				fs.ensureFileSync(errorFile.path);
+				fs.ensureFileSync(errorFile.revOrigPath);
+
+				var errorCount = 0;
+				var stream = revNapkin();
+
+				stream.on('error', function(error){
+					expect(error).to.exist;
+					if (error) {
+						expect(error).to.be.an.instanceof(Error);
+						errorCount += 1;
+					}
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(errorCount).to.equal(1);
+					fs.removeSync(errorFile.path);
+					fs.removeSync(errorFile.revOrigPath);
+					done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should not delete file outside of CWD if {force:false}', function(done){
+				var cwd = path.resolve(TEST_CWD, TEST_DIR);
+				var baseDir = TEST_CWD;
+				var errorFile = TEST_FILES_FAIL.outOfBound;
+				errorFile = vinylPrimer(errorFile, cwd, baseDir, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				fs.ensureFileSync(errorFile.path);
+				fs.ensureFileSync(errorFile.revOrigPath);
+
+				var stream = revNapkin({force: false});
+
+				stream.on('error', function(){
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(fs.existsSync(errorFile.path)).to.be.true;
+					expect(fs.existsSync(errorFile.revOrigPath)).to.be.true;
+					fs.removeSync(errorFile.path);
+					fs.removeSync(errorFile.revOrigPath);
+					done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should delete file outside of CWD if {force:true}', function(done){
+				var cwd = path.resolve(TEST_CWD, TEST_DIR);
+				var baseDir = TEST_CWD;
+				var errorFile = TEST_FILES_FAIL.outOfBound;
+				errorFile = vinylPrimer(errorFile, cwd, baseDir, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				fs.ensureFileSync(errorFile.path);
+				fs.ensureFileSync(errorFile.revOrigPath);
+
+				var stream = revNapkin({force: true});
+
+				writeToStream(stream, errorFile);
+
+				stream.end(function(){
+					expect(fs.existsSync(errorFile.path)).to.be.true;
+					expect(fs.existsSync(errorFile.revOrigPath)).to.be.false;
+					fs.removeSync(errorFile.path);
+					fs.removeSync(errorFile.revOrigPath);
+					done();
+				});
+			});
+
+
+			it('should log output by default', function(done){
+				var stream = revNapkin();
+
+				writeToStream(stream, VINYL_FILES_VALID);
+
+				stream.end(function(){
+					expect(logOutput.length).to.equal(TEST_FILES_VALID.length);
+					done();
+				});
+			});
+
+
+			it('should log output if {verbose:true}', function(done){
+				var stream = revNapkin({verbose: true});
+
+				writeToStream(stream, VINYL_FILES_VALID);
+
+				stream.end(function(){
+					expect(logOutput.length).to.equal(TEST_FILES_VALID.length);
+					done();
+				});
+			});
+
+
+			it('should not log output if {verbose:false}', function(done){
+				var stream = revNapkin({verbose: false});
+
+				writeToStream(stream, VINYL_FILES_VALID);
+
+				stream.end(function(){
+					expect(logOutput.length).to.equal(0);
+					done();
+				});
+			});
 		});
 
+		////////////////////////////////////////
+
+		describe('# Cavents', function(){
+			it('should not delete if target is directory', function(done){
+				var errorFile = TEST_FILES_FAIL.directory;
+				errorFile = vinylPrimer(errorFile, TEST_CWD, TEST_DIR, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				var stream = revNapkin();
+
+				stream.on('error', function(){
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(fs.existsSync(errorFile.revOrigPath)).to.be.true;
+				  done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should emit error if target is directory', function(done){
+				var errorFile = TEST_FILES_FAIL.directory;
+				errorFile = vinylPrimer(errorFile, TEST_CWD, TEST_DIR, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+				fs.ensureFileSync(errorFile.path);
+
+				var errorCount = 0;
+				var stream = revNapkin();
+
+				stream.on('error', function(error){
+					expect(error).to.exist;
+					if (error) {
+						expect(error).to.be.an.instanceof(Error);
+						errorCount += 1;
+					}
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(errorCount).to.equal(1);
+				  done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should emit error if target file does not exist', function(done){
+				var errorFile = TEST_FILES_FAIL.noExist;
+				errorFile = vinylPrimer(errorFile, TEST_CWD, TEST_DIR, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				var errorCount = 0;
+				var stream = revNapkin();
+
+				stream.on('error', function(error){
+					expect(error).to.exist;
+				  if (error) {
+					  expect(error).to.be.an.instanceof(Error);
+						errorCount += 1;
+					}
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(errorCount).to.equal(1);
+				  done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+
+			it('should emit error if target file has broken path', function(done){
+			  var errorFile = TEST_FILES_FAIL.brokenPath;
+				errorFile = vinylPrimer(errorFile, TEST_CWD, TEST_DIR, TEST_FILE_CONTENTS);
+				errorFile = mockVinyl(errorFile);
+
+				var errorCount = 0;
+				var stream = revNapkin();
+
+				stream.on('error', function(error){
+				  expect(error).to.exist;
+					if (error) {
+					  expect(error).to.be.an.instanceof(Error);
+						errorCount += 1;
+					}
+					this.emit('end');
+				});
+
+				writeToStream(stream, errorFile);
+
+				stream.on('end', function(){
+					expect(errorCount).to.equal(1);
+				  done();
+				});
+
+				// Just in case. No timeout.
+				stream.end();
+			});
+
+		});
 	});
 
 
