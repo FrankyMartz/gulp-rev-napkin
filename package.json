@@ -1,0 +1,73 @@
+{
+  "name": "gulp-rev-napkin",
+  "description": "Remove gulp-rev or gulp-rev-all file originals",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": "https://github.com/FrankyMartz/gulp-rev-napkin.git",
+  "homepage": "https://github.com/FrankyMartz/gulp-rev-napkin",
+  "author": {
+    "name": "Franky Martinez",
+    "email": "frankymartz@gmail.com",
+    "url": "http://frankymartz.com"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "bugs": {
+    "url": "https://github.com/FrankyMartz/gulp-rev-napkin/issues"
+  },
+  "keywords": [
+    "gulpplugin",
+    "gulp",
+    "rev",
+    "revision",
+    "hash",
+    "delete",
+    "del",
+    "remove",
+    "trash",
+    "unlink",
+    "clean",
+    "rm"
+  ],
+  "jshintConfig": {
+    "node": true,
+    "esnext": true,
+    "expr": true,
+    "bitwise": true,
+    "camelcase": true,
+    "curly": true,
+    "eqeqeq": true,
+    "immed": true,
+    "newcap": true,
+    "noarg": true,
+    "undef": true,
+    "forin": true,
+    "unused": "vars",
+    "strict": true,
+    "predef": [
+      "describe",
+      "it",
+      "before",
+      "beforeEach",
+      "after",
+      "afterEach"
+    ]
+  },
+  "devDependencies": {
+    "chai": "*",
+    "coveralls": "*",
+    "fs-extra": "*",
+    "mocha": "*",
+    "mocha-lcov-reporter": "*"
+  },
+  "dependencies": {
+    "gulp-util": "^3.0.1",
+    "rimraf": "^2.2.8",
+    "through2": "^0.6.3"
+  }
+}
