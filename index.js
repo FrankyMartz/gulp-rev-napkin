@@ -56,8 +56,11 @@ function plugin(options){
 
 	// Defaults
 	options = options || {};
-	options.verbose = options.verbose !== false;
-	options.force = options.force !== false;
+	if (options.verbose === undefined || options.verbose === null) {
+	  options.verbose = true;
+	}
+	options.verbose = options.verbose ? true : false;
+	options.force = options.force ? true : false;
 
 	var log = gLog.bind(null, options.verbose);
 
