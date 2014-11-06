@@ -1,6 +1,9 @@
 [![Build Status](https://travis-ci.org/FrankyMartz/gulp-rev-napkin.svg)](https://travis-ci.org/FrankyMartz/gulp-rev-napkin)
 [![Dependencies](https://david-dm.org/frankymartz/gulp-rev-napkin.svg)](https://david-dm.org/frankymartz/gulp-rev-napkin)
 [![Coverage Status](https://img.shields.io/coveralls/FrankyMartz/gulp-rev-napkin.svg)](https://coveralls.io/r/FrankyMartz/gulp-rev-napkin)
+[![npm version](https://badge.fury.io/js/gulp-rev-napkin.svg)](http://badge.fury.io/js/gulp-rev-napkin)
+
+[![NPM](https://nodei.co/npm/gulp-rev-napkin.png?downloads=true&stars=true)](https://nodei.co/npm/gulp-rev-napkin/)
 
 # [gulp](https://github.com/wearefractal/gulp)-rev-napkin
 
